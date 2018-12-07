@@ -1,0 +1,76 @@
+* {
+	box-sizing: border-box;
+}
+
+body {
+	background-color: #000000;
+	margin: 0;
+	cursor: move;
+}
+a {
+	color: #ffffff;
+}
+
+.contentcontainer {
+    position: absolute;
+    width: 100%;
+    min-height: 100%;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-rows: 0.01fr 0.98fr 0.01fr;
+    grid-template-areas: ". header header header ." ". . main . ." ". footer footer footer .";
+}
+
+.contentheader {
+	z-index: 1;	
+	grid-area: header;
+	text-align: center;
+}
+
+.HeaderPic {
+    text-align: center;
+    width: 100%;
+    height: auto;
+    margin-top: 10px;
+    background-color: rgba(0, 70, 0, 0.75);
+    border: 3px solid #000000;
+    border-radius: 8px;
+}
+
+.contentmain {
+    box-sizing: border-box;
+    z-index: 1;
+    grid-area: main;
+    display: grid;
+    width: 100%;
+    text-align: center;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1% 90%;
+    grid-template-areas: ". GridAreaSteam ." ". . .";
+}
+
+.contentfooter {
+    grid-area: footer;
+    margin-top: 5px;
+    display: flex;
+}
+
+.LinkPic {
+    border: 3px solid #000000;
+    border-radius: 8px;
+    background-color: rgba(0, 70, 0, 0.75);
+}
+
+.LinkPic:hover {
+	box-shadow: 0 0 12px 6px rgba(0, 70, 0, 0.75);
+}
+
+.Steam {
+    box-sizing: border-box;
+    grid-area: GridAreaSteam;
+    text-align: center;
+    height: 100%;
+    min-height: 100%;
+    width: 100%;
+}

@@ -1,0 +1,19 @@
+.SettingsElements {
+    border: 3px solid #000000;
+    border-radius: 8px;
+    background-color: rgba(0, 70, 0, 0.75);
+    margin: 2px;
+}
+
+    .SettingsElements:hover {
+        box-shadow: 0 0 12px 6px rgba(0, 70, 0, 0.75);
+    }
+
+.qualityElement {
+}
+
+.qualityContainer {
+}
+
+.CubemapSettingsContainer {
+}
