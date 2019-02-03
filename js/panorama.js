@@ -1,10 +1,3 @@
-//function GetIfIsOptimalQuality() {
-
-//}
-
-
-
-
 function JsonReader() {
     this.textureJson = JSON.parse(texturesObjectText);
     this.textureUrl = "textures/cube/";
@@ -62,7 +55,7 @@ function JsonReader() {
         }
         cubemapChoiceContainer.appendChild(cubemapQualityDiv);
 
-        var controlPanel = document.getElementById('id_ContentFooter');
+        var controlPanel = document.getElementById('id_menustrip');
         controlPanel.appendChild(cubemapChoiceContainer);
     }
 }
@@ -92,65 +85,202 @@ JsonReader.prototype.GetIfIsOptimalQuality = function (qualityNr) {
     return false;
 };
 
-//  - objektorientier umbauen <--- das folgende
-var camera, scene, renderer;
-var target = new THREE.Vector3();
-var lon = 90, lat = 0;
+
 var phi = 0, theta = 0;
 var touchX, touchY;
-var allowConstantAnimation = true;
 var constantAnimationSpeed = 0.1;
-var constantAnimationDirectionFactor = 1; // default :: rechts
+var constantAnimationDirectionFactor = 1;
 var optionsReader = new JsonReader();
-init();
 
+var Panorama = function () {
+    this.ThreeJsRendererContainer;
+    this.doINeedToDebug = true;
+    this.stats;
+    if (this.doINeedToDebug) {
+        this.stats = new Stats();
+        this.stats.showPanel(0);
+        document.body.appendChild(this.stats.dom);
+    }
+    this.gameLoop;
+    this.onMouseLeaveEvent;
+    this.onMouseLeaveEventSet = false;
+    this.camera;
+    this.scene;
+    this.renderer;
+    this.target = new THREE.Vector3();
+    this.allowConstantAnimation = true;
+    
+    this.lon = 90;
+    this.oldLon = 0;
+    this.smoothLonTransitionCurrentSpeed = 0.0;
+    this.smoothLonTransitionDirection = 0;
+    this.smoothLonTransitionMaxValue = 0.4;
+    this.smoothLonTransitionMinValue = 0.1;
+    this.smoothLonTransitionDecreaseAmout = 0.01;
+    this.setLonSmoothingValues = function () {
+        if (this.oldLon != this.lon) {
+            this.smoothLonTransitionCurrentSpeed = this.oldLon - this.lon;
+            if (this.smoothLonTransitionCurrentSpeed < 0.0) {
+                this.smoothLonTransitionCurrentSpeed *= (-1);
+                this.smoothLonTransitionDirection = 1;
+            }
+            else {
+                this.smoothLonTransitionDirection = -1;
+            }
 
-// TODO:: 
-//  - eventlistener schaltbar machen (damit im html angegeben werden kann, welches Dom - element als "Steuer - Bereich" gelten soll <--- Musikverein: renderer-Dom-Element; Meine Seite: "Steuer - Button" unten rechts)
-//  - auto-dreh - geschwindigkeits - Button / regler
-//  - dreh - geschwindigkeit automatisch in ecke des cubes etwas (faktor bestimmen!) beschleunigen, um "smoothere" Animation zu gewaehrleisten  // autausch zur Kugel für die environment - map
-//  - position - fixed beim grafik - canvas
-//  - "smoothes" stoppen durch geschwindigkskurve
-
-
-function reloadCubeMap() {
-    var TexturePath = optionsReader.GetTexturePath();
-    var sides = [
-        {
-            url: TexturePath + 'posx.jpg',
-        },
-        {
-            url: TexturePath + 'negx.jpg',
-        },
-        {
-            url: TexturePath + 'posy.jpg',
-        },
-        {
-            url: TexturePath + 'negy.jpg',
-        },
-        {
-            url: TexturePath + 'posz.jpg',
-        },
-        {
-            url: TexturePath + 'negz.jpg',
+            if (this.smoothLonTransitionCurrentSpeed > this.smoothLonTransitionMaxValue) {
+                this.smoothLonTransitionCurrentSpeed = this.smoothLonTransitionMaxValue;
+            }
+            if (this.smoothLonTransitionCurrentSpeed < this.smoothLonTransitionMinValue) {
+                this.smoothLonTransitionCurrentSpeed = this.smoothLonTransitionMinValue;
+            }
         }
-    ];
+    }
 
-    for (var i = 0; i < sides.length; i++) {
-        var side = sides[i];
-        var sidePic = document.getElementById("cubeMapPic_" + i);
-        sidePic.src = side.url;
+    this.lat = 0;
+    this.oldLat = 0;
+    this.smoothLatTransitionCurrentSpeed = 0.0;
+    this.smoothLatTransitionDirection = 0;
+    this.smoothLatTransitionMaxValue = 0.23;
+    this.smoothLatTransitionMinValue = 0.05;
+    this.smoothLatTransitionDecreaseAmout = 0.01;
+    this.setLatSmoothingValues = function () {
+        if (this.oldLat != this.lat) {
+            this.smoothLatTransitionCurrentSpeed = this.oldLat - this.lat;
+            if (this.smoothLatTransitionCurrentSpeed < 0.0) {
+                this.smoothLatTransitionCurrentSpeed *= (-1);
+                this.smoothLatTransitionDirection = 1;
+            }
+            else {
+                this.smoothLatTransitionDirection = -1;
+            }
+
+            if (this.smoothLatTransitionCurrentSpeed > this.smoothLatTransitionMaxValue) {
+                this.smoothLatTransitionCurrentSpeed = this.smoothLatTransitionMaxValue;
+            }
+            if (this.smoothLatTransitionCurrentSpeed < this.smoothLatTransitionMinValue) {
+                this.smoothLatTransitionCurrentSpeed = this.smoothLatTransitionMinValue;
+            }
+        }
     }
 
 
+    //Event - Methoden
+    this.onJsRendererContainerMouseLeave = function () {
+        if (this.onMouseLeaveEventSet == true) {
+            this.onMouseLeaveEvent();
+            return;
+        }
+
+        this.allowConstantAnimation = true;
+        this.setLonSmoothingValues();
+        this.setLatSmoothingValues();
+    }
+
+    this.onJsRendererContainerMouseMove = function () {
+        if (this.allowConstantAnimation == false) {
+            var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+            var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+            var movementXLonModifier = movementX * 0.1;
+            this.lon -= movementXLonModifier;
+            this.lat += movementY * 0.1;
+            SetMovementDirectionFromControlMoveValue(-movementX);
+        }
+    }
+
+    this.onJsRendererContainerMouseUp = function () {
+        this.allowConstantAnimation = true;
+        this.setLonSmoothingValues();
+        this.setLatSmoothingValues();
+    }
+
+    this.onJsRendererContainerMouseDown = function () {
+        this.allowConstantAnimation = false;
+        event.preventDefault();
+        this.oldLon = this.lon;
+        this.oldLat = this.lat;
+    }
+
+    this.onJsRendererContainerTouchStart = function () {
+        this.allowConstantAnimation = false;
+        var touch = event.touches[0];
+        touchX = touch.screenX;
+        touchY = touch.screenY;
+        this.oldLon = this.lon;
+        this.oldLat = this.lat;
+    }
+
+    this.onJsRendererContainerTouchMove = function () {
+        var touch = event.touches[0];
+        var xMoveDistance = touch.screenX - touchX;
+        var xMoveDistanceLonModifier = (xMoveDistance) * 0.1;
+        this.lon -= xMoveDistanceLonModifier;
+        this.lat += (touch.screenY - touchY) * 0.1;
+        SetMovementDirectionFromControlMoveValue(-xMoveDistance);
+        touchX = touch.screenX;
+        touchY = touch.screenY;
+    }
+
+    this.onJsRendererContainerTouchEnd = function () {
+        this.allowConstantAnimation = true;
+        this.setLonSmoothingValues();
+        this.setLatSmoothingValues();
+    }
 }
 
-function init() {
+Panorama.prototype.SetGameLoopFunction = function (GameLoopFunction) {
+    this.gameLoop = GameLoopFunction;
+}
+
+Panorama.prototype.SetOnMouseLeaveEventFunction = function (onMouseLeaveEventFunction) {
+    this.onMouseLeaveEvent = onMouseLeaveEventFunction;
+    this.onMouseLeaveEventSet = true;
+}
+
+Panorama.prototype.animate = function () {
+    if (this.doINeedToDebug == true) {
+        this.stats.update();
+    }
+
+
+    if (this.allowConstantAnimation === true) {
+        this.lon += constantAnimationSpeed * constantAnimationDirectionFactor;
+    }
+    this.lon += this.smoothLonTransitionCurrentSpeed * this.smoothLonTransitionDirection;
+    if (this.smoothLonTransitionCurrentSpeed > 0.0) {
+        this.smoothLonTransitionCurrentSpeed -= this.smoothLonTransitionDecreaseAmout;
+    }
+    else {
+        this.smoothLonTransitionCurrentSpeed = 0.0;
+    }
+
+
+
+    this.lat = Math.max(- 85, Math.min(85, this.lat));
+    this.lat += this.smoothLatTransitionCurrentSpeed * this.smoothLatTransitionDirection;
+    if (this.smoothLatTransitionCurrentSpeed > 0.0) {
+        this.smoothLatTransitionCurrentSpeed -= this.smoothLatTransitionDecreaseAmout;
+    }
+    else {
+        this.smoothLatTransitionCurrentSpeed = 0.0;
+    }
+
+    phi = THREE.Math.degToRad(90 - this.lat);
+    theta = THREE.Math.degToRad(this.lon);
+    this.target.x = Math.sin(phi) * Math.cos(theta);
+    this.target.y = Math.cos(phi);
+    this.target.z = Math.sin(phi) * Math.sin(theta);
+
+    this.camera.lookAt(this.target);
+    this.renderer.render(this.scene, this.camera);
+}
+
+Panorama.prototype.init = function (threeJsRendererContainerID, optionalControlElementId = "") {
     optionsReader.SetOptimalTexture();
     var TexturePath = optionsReader.GetTexturePath();
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-    scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+    this.scene = new THREE.Scene();
     let halfPi = Math.PI / 2;
 
     var sides = [
@@ -198,23 +328,38 @@ function init() {
         var object = new THREE.CSS3DObject(element);
         object.position.fromArray(side.position);
         object.rotation.fromArray(side.rotation);
-        scene.add(object);
+        this.scene.add(object);
     }
 
-    renderer = new THREE.CSS3DRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-	
-    document.addEventListener('mousedown', onDocumentMouseDown, false);
-    //document.addEventListener('wheel', onDocumentMouseWheel, false);
-    document.addEventListener('touchstart', onDocumentTouchStart, false);
-    document.addEventListener('touchmove', onDocumentTouchMove, false);
-    document.addEventListener('touchend', onDocumentTouchEnd, false);
-    window.addEventListener('resize', onWindowResize, false);
+    this.renderer = new THREE.CSS3DRenderer();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.domElement.classList += "ThreeJsRenderer";
+    this.ThreeJsRendererContainer = document.getElementById(threeJsRendererContainerID);
+    this.ThreeJsRendererContainer.appendChild(this.renderer.domElement);
 
-    animate();
+    var controlContainer = document.getElementById(optionalControlElementId);
+    if (optionalControlElementId == '') {
+        controlContainer = document.getElementById(threeJsRendererContainerID);
+    }
+
+    var panoramaObjectInstance = this;
+    controlContainer.addEventListener('mouseleave', (function () { panoramaObjectInstance.onJsRendererContainerMouseLeave(); }), false);
+    controlContainer.addEventListener('mousedown', (function () { panoramaObjectInstance.onJsRendererContainerMouseDown(); }), false);
+    controlContainer.addEventListener('mouseup', (function () { panoramaObjectInstance.onJsRendererContainerMouseUp(); }), false);
+    controlContainer.addEventListener('mousemove', (function () { panoramaObjectInstance.onJsRendererContainerMouseMove(); }), false);
+
+    controlContainer.addEventListener('touchstart', (function () { panoramaObjectInstance.onJsRendererContainerTouchStart(); }), false);
+    controlContainer.addEventListener('touchmove', (function () { panoramaObjectInstance.onJsRendererContainerTouchMove(); }), false);
+    controlContainer.addEventListener('touchend', (function () { panoramaObjectInstance.onJsRendererContainerTouchEnd(); }), false);
+
+    this.gameLoop();
 }
 
+// TODO:: 
+//  - auto-dreh - geschwindigkeits - Button / regler
+//  - dreh - geschwindigkeit automatisch in ecke des cubes etwas (faktor bestimmen!) beschleunigen, um "smoothere" Animation zu gewaehrleisten  // autausch zur Kugel für die environment - map
+
+//// In - Event - Funktionen 
 function SetMovementDirectionFromControlMoveValue(value) {
     if (value > -0.001) { //rechts
         constantAnimationDirectionFactor = 1;
@@ -224,24 +369,35 @@ function SetMovementDirectionFromControlMoveValue(value) {
     }
 }
 
-function animate() {
-    requestAnimationFrame(animate);
-	if (allowConstantAnimation === true) {
-        lon += constantAnimationSpeed * constantAnimationDirectionFactor;
-	}
-	lat = Math.max(- 85, Math.min(85, lat));
-	phi = THREE.Math.degToRad(90 - lat);
-	theta = THREE.Math.degToRad(lon);
-	target.x = Math.sin(phi) * Math.cos(theta);
-	target.y = Math.cos(phi);
-	target.z = Math.sin(phi) * Math.sin(theta);
-		
-	camera.lookAt(target);
-    renderer.render(scene, camera);
+function reloadCubeMap() {
+    var TexturePath = optionsReader.GetTexturePath();
+    var sides = [
+        {
+            url: TexturePath + 'posx.jpg',
+        },
+        {
+            url: TexturePath + 'negx.jpg',
+        },
+        {
+            url: TexturePath + 'posy.jpg',
+        },
+        {
+            url: TexturePath + 'negy.jpg',
+        },
+        {
+            url: TexturePath + 'posz.jpg',
+        },
+        {
+            url: TexturePath + 'negz.jpg',
+        }
+    ];
+
+    for (var i = 0; i < sides.length; i++) {
+        var side = sides[i];
+        var sidePic = document.getElementById("cubeMapPic_" + i);
+        sidePic.src = side.url;
+    }
 }
-
-
-
 
  //// EVENTS //////
 function onCubeMapChoiceMouseDown(event) {
@@ -256,59 +412,11 @@ function onQualityChoiceMouseDown(event) {
     reloadCubeMap();
 }
 
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function onDocumentMouseDown(event) {
-    allowConstantAnimation = false;
-    event.preventDefault();
-    document.addEventListener('mousemove', onDocumentMouseMove, false);
-    document.addEventListener('mouseup', onDocumentMouseUp, false);
-}
-
-function onDocumentMouseMove(event) {
-    var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-    var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
-    lon -= movementX * 0.1;
-    lat += movementY * 0.1;
-    SetMovementDirectionFromControlMoveValue(-movementX);
-}
-
-function onDocumentMouseUp() {
-    allowConstantAnimation = true;
-    document.removeEventListener('mousemove', onDocumentMouseMove);
-    document.removeEventListener('mouseup', onDocumentMouseUp);
-}
-
 function onDocumentMouseWheel(event) {
     var fov = camera.fov + event.deltaY * 0.05;
     camera.fov = THREE.Math.clamp(fov, 10, 75);
     camera.updateProjectionMatrix();
 }
 
-function onDocumentTouchStart(event) {
-    allowConstantAnimation = false;
-    event.preventDefault();
-    var touch = event.touches[0];
-    touchX = touch.screenX;
-    touchY = touch.screenY;
-}
 
-function onDocumentTouchMove(event) {
-    event.preventDefault();
-    var touch = event.touches[0];
-    var xMoveDistance = touch.screenX - touchX;
-    lon -= (xMoveDistance) * 0.1;
-    lat += (touch.screenY - touchY) * 0.1;
-    SetMovementDirectionFromControlMoveValue(-xMoveDistance);
-    touchX = touch.screenX;
-    touchY = touch.screenY;
-}
-
-function onDocumentTouchEnd(event) {
-    allowConstantAnimation = true;
-}
 

@@ -1,0 +1,116 @@
+.threeJsControlElement {
+    z-index: 9999999;
+    overflow: hidden;
+    width: 100px;
+    height: 100px;
+    position: fixed;
+    bottom:3vh;
+    right:3vh;
+    background-color: white;
+}
+
+.contentAlign {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-rows: 100%;
+    grid-template-areas: ". container container container menuStrip";
+}
+
+.contentcontainer {
+    grid-area: container;
+    width: 100%;
+    min-height: 100%;
+    z-index: 99;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 0.01fr 0.01fr 0.98fr;
+    grid-template-areas: "header header header" "menu menu menu" ". main .";
+    overflow: auto; /* TODO:: hier entsprechendes overflow schalten!!!*/
+    background-color: rgba(255, 255, 255, 0.21);
+    border: 3px solid #000000;
+    border-radius: 8px;
+    height: 96vh;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.menustripButton {
+    grid-area: menu;
+    padding-left: 10px;
+    padding-right: 10px;
+    float: right;
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.MenuButton {
+    border: 3px solid #000000;
+    border-radius: 8px;
+    background-color: rgba(0, 70, 0, 0.75);
+    color: white;
+    text-align: right;
+    text-decoration: none;
+    align-content:center;
+    display: block;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.MenuButton:hover{
+	box-shadow: 0 0 12px 6px rgba(0, 70, 0, 0.75);
+}
+
+.contentheader {
+    z-index: 1;
+    grid-area: header;
+    text-align: center;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.HeaderPic {
+    text-align: center;
+    margin-top: 10px;
+    background-color: rgba(0, 70, 0, 0.75);
+    border: 3px solid #000000;
+    border-radius: 8px;
+    overflow:hidden;
+}
+
+.contentmain {
+    padding-top: 10px;
+    box-sizing: border-box;
+    z-index: 1;
+    grid-area: main;
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    text-align: center;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.LinkPic {
+    border: 3px solid #000000;
+    border-radius: 8px;
+    background-color: rgba(0, 70, 0, 0.75);
+}
+
+.LinkPic:hover {
+	box-shadow: 0 0 12px 6px rgba(0, 70, 0, 0.75);
+}
+
+.Steam {
+    box-sizing: border-box;
+    text-align: center;
+    width: 100%;
+}
+
+.disclaimer {
+    box-sizing: border-box;
+    text-align: center;
+    height: 100%;
+    min-height: 100%;
+    width: 100%;
+}

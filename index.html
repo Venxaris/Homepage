@@ -1,34 +1,104 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>Venxaris`s`s`s Webseite yoo</title>
     <link rel="stylesheet" href="css/default.css">
     <link rel="stylesheet" href="css/panoramaGenStuff.css">
+	<link rel="stylesheet" href="css/webcontent.css">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <script type="text/javascript" src="textures/cube/textureInformation.js"></script>
+	<script type="text/javascript">
+		function toggleMenu()
+		{
+			var menu = document.getElementById('id_menustrip');
+			if(menu.classList.contains('show') == true) {
+				menu.classList.remove('show');
+				return;
+			}
+			menu.classList.add('show');
+		}
+	</script>
 </head>
 <body>
-    <script src="js/three.js"></script>
-    <script src="js/renderers/CSS3DRenderer.js"></script>
-    <div class="contentcontainer">
-        <div class="contentheader">
-            <img class="HeaderPic" src="pictures/HomepageHeader.png" />
-        </div>
+    <div class="contentAlign">
+        <div class="contentcontainer">
+            <div class="contentheader">
+                <img class="HeaderPic" src="pictures/HomepageHeader.png" />
+            </div>
 
-        <div class="contentmain">
-            <div class="Steam">
-                <a id="SteamLink" href="https://steamcommunity.com/id/venxaris" target="_blank">
-                    <img class="LinkPic" id="SteamLinkPicture" src="pictures/globalheader_logo.png" />
-                </a>
+            <div class="menustripButton">
+                <button class="MenuButton" type="button" onclick="toggleMenu();">Menu</button>
+            </div>
+
+            <div class="contentmain">
+                <div class="Steam">
+                    <a id="SteamLink" href="https://steamcommunity.com/id/venxaris" target="_blank">
+                        <img class="LinkPic" id="SteamLinkPicture" src="pictures/globalheader_logo.png" />
+                    </a>
+                </div>
+                <div class="disclaimer">
+                    <a> this page is a work in progress.. the displayed content(badly made Header and the steam - link) are just for testing purposes.</a>
+                    <a> mobile optimisation is something for the future - me ....</a>
+                </div>
             </div>
         </div>
-
-        <div id="id_ContentFooter" class="contentfooter">
+        <div id="id_menustrip" class="Menustrip">
 
         </div>
     </div>
-
+    <div id="id_threeJsRendererContainer" class="threeJsRendererContainer"></div>
+    <div id="id_threeJsControlElement" class="threeJsControlElement"> <i> add fancy animation or something </i> </div>
+    <script src="js/three.js"></script>
+    <script src="js/renderers/CSS3DRenderer.js"></script>
+    <script src="js/debug.js"></script>
     <script src="js/panorama.js"></script>
+    <script>
+        var MyPanorama = new Panorama();
+
+        var GameLoop = function () {
+            MyPanorama.animate();
+            requestAnimationFrame(GameLoop);
+        }
+
+        // on mouse - out event: steuerungs - funktion aus dem html setzen, wenn nicht gesetzt: auf standard(einfache animation, keine Kontrolle) setzen
+        function DocumentOnMouseMove(event) {
+            if (MyPanorama.allowConstantAnimation == false) {
+                var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+                var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+                var movementXLonModifier = movementX * 0.1;
+                MyPanorama.lon -= movementXLonModifier;
+                MyPanorama.lat += movementY * 0.1;
+                SetMovementDirectionFromControlMoveValue(-movementX);
+            }
+        }
+        function DocumentOnMouseUp(event) {
+            MyPanorama.allowConstantAnimation = true;
+            MyPanorama.setLonSmoothingValues();
+            MyPanorama.setLatSmoothingValues();
+            document.removeEventListener('mousemove', DocumentOnMouseMove);
+            document.removeEventListener('mouseup', DocumentOnMouseUp);
+        }
+        var OnMouseLeavePanoramaControl = function () {
+            if (MyPanorama.allowConstantAnimation == false) {
+                document.addEventListener('mousemove', DocumentOnMouseMove, false);
+                document.addEventListener('mouseup', DocumentOnMouseUp, false);
+            }
+        }
+
+        MyPanorama.SetGameLoopFunction(GameLoop);
+        MyPanorama.SetOnMouseLeaveEventFunction(OnMouseLeavePanoramaControl);
+        MyPanorama.init('id_threeJsRendererContainer', 'id_threeJsControlElement');
+
+
+
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            MyPanorama.camera.aspect = window.innerWidth / window.innerHeight;
+            MyPanorama.camera.updateProjectionMatrix();
+            MyPanorama.renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+
 </body>
 </html>
